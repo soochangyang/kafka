@@ -195,6 +195,55 @@ VALUES ('test@example.com', 'Soochang', 'password123', 'user01');
 ./bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic my_topic_users --from-beginning
 ```
 
+## 16. Create MariaDB Sink Connector via REST API
+Kafka 토픽(`my_topic_users`)에 적재된 데이터를 다시 타겟 데이터베이스로 밀어넣는(Sink) 커넥터를 생성합니다. `auto.create: "true"` 옵션에 의해 타겟 DB에 테이블이 없으면 자동 생성되며, 테이블 이름은 토픽 이름과 동일한 `my_topic_users`로 만들어집니다.
+
+*   **Endpoint**: `POST http://localhost:8083/connectors`
+*   **Client**: Bruno (or Postman)
+*   **Body (JSON)**:
+```json
+{
+  "name":"my-sink-connect",
+  "config": {
+    "connector.class":"io.confluent.connect.jdbc.JdbcSinkConnector",
+    "connection.url":"jdbc:mariadb://192.168.0.4:3306/mydb",
+    "connection.user":"root",
+    "connection.password":"test1234",
+    "auto.create":"true",
+    "auto.evolve":"true",
+    "delete.enabled":"false",
+    "tasks.max":"1",
+    "topics":"my_topic_users"
+  }
+}
+```
+
+## 17. Verify Sink Connector Status
+Sink Connector가 정상적으로 구동되어 토픽의 데이터를 소비(Consume)하기 시작했는지 상태를 확인합니다.
+
+Endpoint: GET http://localhost:8083/connectors/my-sink-connect/status
+
+Expected Response: connector.state 및 tasks[0].state 값이 모두 "RUNNING"이어야 합니다.
+
+## 18. Verify Data Replication in Target Database
+Source DB(users 테이블)에 인서트했던 데이터가 카프카를 거쳐 타겟 DB에 자동 생성된 my_topic_users 테이블로 동기화되었는지 DBeaver에서 확인합니다.
+```sql
+-- DBeaver에서 새 쿼리 탭을 열고 실행
+SELECT * FROM my_topic_users;
+```
+
+## 19. End-to-End Pipeline Test
+최종적으로 Source 테이블에 새로운 데이터를 추가하고, 별도의 조작 없이 타겟 테이블에 실시간으로 데이터가 들어오는지 파이프라인 전체 흐름을 테스트합니다.
+```sql
+-- 1. Source 테이블에 새 데이터 INSERT
+INSERT INTO users (email, name, encrypted_pwd, user_id) 
+VALUES ('hello@example.com', 'Kafka', 'pass9876', 'user02');
+
+-- 2. Target 테이블 조회하여 데이터 자동 복제 확인
+SELECT * FROM my_topic_users;
+```
+
+
 
 
 
