@@ -192,7 +192,7 @@ VALUES ('test@example.com', 'Soochang', 'password123', 'user01');
 ./bin/kafka-topics.sh --bootstrap-server localhost:9092 --list
 
 # 2. Console Consumer를 통해 실시간 데이터 유입 확인
-./bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic my_topic_mydb.users --from-beginning
+./bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic my_topic_users --from-beginning
 ```
 
 
